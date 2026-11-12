@@ -1,0 +1,910 @@
+{
+  "manifest_version": 1,
+  "type": "device",
+  "name": "Vallox",
+  "description": {
+    "en": "Control your Vallox heat recovery ventilation unit locally: profiles, fans, temperatures.",
+    "fr": "Pilotez votre VMC double flux Vallox en local : profils, ventilation, températures.",
+    "de": "Steuere dein Vallox-Lüftungsgerät lokal: Profile, Lüfter und Temperaturen.",
+    "es": "Controle su unidad de ventilación Vallox en local: perfiles, ventilación, temperaturas."
+  },
+  "version": "1.0.0",
+  "docker_image": "ghcr.io/prohand/gladys-vallox:1.0.0",
+  "gladys_version": ">=5.3.0",
+  "cover_image": "https://raw.githubusercontent.com/prohand/gladys-vallox/main/cover.png",
+  "categories": ["climate", "environment"],
+  "keywords": [
+    "valloplus",
+    "vallomulti",
+    "vallox mv",
+    "helios kwl",
+    "vmc double flux",
+    "mvhr",
+    "heat recovery",
+    "ventilation",
+    "lüftungsanlage",
+    "ventilación"
+  ],
+  "transports": ["local"],
+  "config_schema": [
+    {
+      "key": "intro",
+      "type": "section",
+      "label": {
+        "en": "Getting started",
+        "fr": "Pour commencer",
+        "de": "Erste Schritte",
+        "es": "Primeros pasos"
+      },
+      "description": {
+        "en": "The integration talks to the unit directly on your local network, like the Vallox web interface does: no cloud account. Give the unit a fixed IP address in your router, check that you can open http://<that address> in a browser, then type the address below.",
+        "fr": "L'intégration parle directement à la centrale sur votre réseau local, comme l'interface web Vallox : aucun compte cloud. Donnez une adresse IP fixe à la centrale dans votre box, vérifiez que http://<cette adresse> s'ouvre dans un navigateur, puis saisissez l'adresse ci-dessous.",
+        "de": "Die Integration spricht direkt im lokalen Netzwerk mit dem Gerät, so wie die Vallox-Weboberfläche: kein Cloud-Konto. Gib dem Gerät in deinem Router eine feste IP-Adresse, prüfe, dass sich http://<diese Adresse> im Browser öffnet, und trage die Adresse unten ein.",
+        "es": "La integración habla directamente con la unidad en su red local, como la interfaz web de Vallox: sin cuenta en la nube. Asigne una dirección IP fija a la unidad en su router, compruebe que http://<esa dirección> se abre en un navegador y escriba la dirección abajo."
+      },
+      "links": [
+        {
+          "url": "https://github.com/prohand/gladys-vallox/blob/main/docs/en.md",
+          "label": {
+            "en": "Integration documentation",
+            "fr": "Documentation de l'intégration",
+            "de": "Dokumentation der Integration",
+            "es": "Documentación de la integración"
+          }
+        }
+      ]
+    },
+    {
+      "key": "hosts",
+      "type": "string",
+      "label": {
+        "en": "IP address of the unit",
+        "fr": "Adresse IP de la centrale",
+        "de": "IP-Adresse des Geräts",
+        "es": "Dirección IP de la unidad"
+      },
+      "description": {
+        "en": "Several units: separate their addresses with commas.",
+        "fr": "Plusieurs centrales : séparez leurs adresses par des virgules.",
+        "de": "Mehrere Geräte: Trenne ihre Adressen durch Kommas.",
+        "es": "Varias unidades: separe sus direcciones con comas."
+      },
+      "placeholder": {
+        "en": "e.g. 192.168.1.50",
+        "fr": "ex. 192.168.1.50",
+        "de": "z. B. 192.168.1.50",
+        "es": "p. ej. 192.168.1.50"
+      },
+      "required": true
+    },
+    {
+      "key": "poll_frequency",
+      "type": "number",
+      "label": {
+        "en": "Refresh interval (s)",
+        "fr": "Intervalle de rafraîchissement (s)",
+        "de": "Aktualisierungsintervall (s)",
+        "es": "Intervalo de actualización (s)"
+      },
+      "description": {
+        "en": "How often the unit is read, in seconds (15 to 3600).",
+        "fr": "Fréquence de lecture de la centrale, en secondes (15 à 3600).",
+        "de": "Wie oft das Gerät gelesen wird, in Sekunden (15 bis 3600).",
+        "es": "Cada cuánto se lee la unidad, en segundos (15 a 3600)."
+      },
+      "required": false,
+      "default": 60,
+      "min": 15,
+      "max": 3600
+    },
+    {
+      "key": "filter_warning_days",
+      "type": "number",
+      "label": {
+        "en": "Filter warning (days)",
+        "fr": "Alerte filtre (jours)",
+        "de": "Filterwarnung (Tage)",
+        "es": "Aviso de filtro (días)"
+      },
+      "description": {
+        "en": "The \"Filter change due\" scene trigger fires when the filter life left reaches this number of days.",
+        "fr": "Le déclencheur de scène « Changement de filtre à prévoir » se déclenche quand la durée de vie restante du filtre atteint ce nombre de jours.",
+        "de": "Der Szenenauslöser „Filterwechsel fällig“ löst aus, wenn die Restlaufzeit des Filters diese Anzahl Tage erreicht.",
+        "es": "El disparador de escena «Cambio de filtro próximo» se activa cuando la vida restante del filtro llega a este número de días."
+      },
+      "required": false,
+      "default": 14,
+      "min": 0,
+      "max": 90
+    }
+  ],
+  "actions": [
+    {
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
+      "timeout_seconds": 60
+    },
+    {
+      "key": "reset_filter_reminder",
+      "label": {
+        "en": "Filters changed today",
+        "fr": "Filtres changés aujourd'hui",
+        "de": "Filter heute gewechselt",
+        "es": "Filtros cambiados hoy"
+      },
+      "timeout_seconds": 60,
+      "fields": [
+        {
+          "key": "reset_filter_intro",
+          "type": "section",
+          "label": {
+            "en": "Restart the filter reminder",
+            "fr": "Relancer le rappel de filtre",
+            "de": "Filtererinnerung neu starten",
+            "es": "Reiniciar el recordatorio de filtro"
+          },
+          "description": {
+            "en": "Records a filter change made today: the unit counts its next reminder from today.",
+            "fr": "Enregistre un changement de filtre fait aujourd'hui : la centrale compte son prochain rappel à partir d'aujourd'hui.",
+            "de": "Erfasst einen heute durchgeführten Filterwechsel: Das Gerät zählt die nächste Erinnerung ab heute.",
+            "es": "Registra un cambio de filtro hecho hoy: la unidad cuenta su próximo recordatorio a partir de hoy."
+          }
+        },
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Unit",
+            "fr": "Centrale",
+            "de": "Gerät",
+            "es": "Unidad"
+          },
+          "required": true
+        }
+      ]
+    }
+  ],
+  "scene_triggers": [
+    {
+      "key": "profile_changed",
+      "label": {
+        "en": "Ventilation profile changed",
+        "fr": "Le profil de ventilation a changé",
+        "de": "Lüftungsprofil geändert",
+        "es": "Ha cambiado el perfil de ventilación"
+      },
+      "description": {
+        "en": "The unit switched profile (home, away, boost, fireplace…), from its panel, its app or a timer. Gladys own orders never fire it.",
+        "fr": "La centrale a changé de profil (maison, absence, boost, cheminée…), depuis son panneau, son appli ou une minuterie. Les ordres de Gladys ne le déclenchent jamais.",
+        "de": "Das Gerät hat das Profil gewechselt (Zuhause, Abwesend, Boost, Kamin…), über sein Bedienteil, seine App oder einen Timer. Befehle von Gladys selbst lösen dies nie aus.",
+        "es": "La unidad ha cambiado de perfil (en casa, ausente, boost, chimenea…), desde su panel, su app o un temporizador. Las propias órdenes de Gladys nunca lo activan."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Unit",
+            "fr": "Centrale",
+            "de": "Gerät",
+            "es": "Unidad"
+          },
+          "required": false
+        },
+        {
+          "key": "profile",
+          "type": "multi_select",
+          "label": {
+            "en": "New profile",
+            "fr": "Nouveau profil",
+            "de": "Neues Profil",
+            "es": "Nuevo perfil"
+          },
+          "options": [
+            {
+              "value": "home",
+              "label": {
+                "en": "Home",
+                "fr": "Maison",
+                "de": "Zuhause",
+                "es": "En casa"
+              }
+            },
+            {
+              "value": "away",
+              "label": {
+                "en": "Away",
+                "fr": "Absence",
+                "de": "Abwesend",
+                "es": "Ausente"
+              }
+            },
+            {
+              "value": "boost",
+              "label": {
+                "en": "Boost",
+                "fr": "Boost",
+                "de": "Boost",
+                "es": "Boost"
+              }
+            },
+            {
+              "value": "fireplace",
+              "label": {
+                "en": "Fireplace",
+                "fr": "Cheminée",
+                "de": "Kamin",
+                "es": "Chimenea"
+              }
+            },
+            {
+              "value": "extra",
+              "label": {
+                "en": "Extra",
+                "fr": "Extra",
+                "de": "Extra",
+                "es": "Extra"
+              }
+            }
+          ]
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Unit name",
+            "fr": "Nom de la centrale",
+            "de": "Gerätename",
+            "es": "Nombre de la unidad"
+          }
+        },
+        {
+          "key": "profile",
+          "type": "string",
+          "label": {
+            "en": "New profile",
+            "fr": "Nouveau profil",
+            "de": "Neues Profil",
+            "es": "Nuevo perfil"
+          }
+        },
+        {
+          "key": "previous_profile",
+          "type": "string",
+          "label": {
+            "en": "Previous profile",
+            "fr": "Profil précédent",
+            "de": "Vorheriges Profil",
+            "es": "Perfil anterior"
+          }
+        }
+      ]
+    },
+    {
+      "key": "alarm_raised",
+      "label": {
+        "en": "Ventilation alarm",
+        "fr": "Alarme de la VMC",
+        "de": "Lüftungsalarm",
+        "es": "Alarma de ventilación"
+      },
+      "description": {
+        "en": "A new alarm is active on the unit (fan fault, frozen cell, dirty filters, sensor fault…).",
+        "fr": "Une nouvelle alarme est active sur la centrale (ventilateur en défaut, échangeur gelé, filtres encrassés, sonde en défaut…).",
+        "de": "Ein neuer Alarm ist am Gerät aktiv (Lüfterstörung, vereister Wärmetauscher, verschmutzte Filter, Fühlerfehler…).",
+        "es": "Hay una nueva alarma activa en la unidad (fallo de ventilador, intercambiador congelado, filtros sucios, fallo de sonda…)."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Unit",
+            "fr": "Centrale",
+            "de": "Gerät",
+            "es": "Unidad"
+          },
+          "required": false
+        },
+        {
+          "key": "severity",
+          "type": "multi_select",
+          "label": {
+            "en": "Severity",
+            "fr": "Gravité",
+            "de": "Schweregrad",
+            "es": "Gravedad"
+          },
+          "options": [
+            {
+              "value": "mild",
+              "label": {
+                "en": "Mild",
+                "fr": "Légère",
+                "de": "Leicht",
+                "es": "Leve"
+              }
+            },
+            {
+              "value": "severe",
+              "label": {
+                "en": "Severe",
+                "fr": "Grave",
+                "de": "Schwer",
+                "es": "Grave"
+              }
+            }
+          ]
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Unit name",
+            "fr": "Nom de la centrale",
+            "de": "Gerätename",
+            "es": "Nombre de la unidad"
+          }
+        },
+        {
+          "key": "severity",
+          "type": "string",
+          "label": {
+            "en": "Severity",
+            "fr": "Gravité",
+            "de": "Schweregrad",
+            "es": "Gravedad"
+          }
+        },
+        {
+          "key": "alarm",
+          "type": "string",
+          "label": {
+            "en": "Alarm",
+            "fr": "Alarme",
+            "de": "Alarm",
+            "es": "Alarma"
+          }
+        },
+        {
+          "key": "code",
+          "type": "number",
+          "label": {
+            "en": "Alarm code",
+            "fr": "Code d'alarme",
+            "de": "Alarmcode",
+            "es": "Código de alarma"
+          }
+        },
+        {
+          "key": "message",
+          "type": "string",
+          "label": {
+            "en": "Message (English)",
+            "fr": "Message (anglais)",
+            "de": "Meldung (Englisch)",
+            "es": "Mensaje (inglés)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "filter_change_due",
+      "label": {
+        "en": "Filter change due",
+        "fr": "Changement de filtre à prévoir",
+        "de": "Filterwechsel fällig",
+        "es": "Cambio de filtro próximo"
+      },
+      "description": {
+        "en": "The filter life left reached the number of days set in the configuration.",
+        "fr": "La durée de vie restante du filtre a atteint le nombre de jours réglé dans la configuration.",
+        "de": "Die Restlaufzeit des Filters hat die in der Konfiguration eingestellte Anzahl Tage erreicht.",
+        "es": "La vida restante del filtro ha llegado al número de días fijado en la configuración."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Unit",
+            "fr": "Centrale",
+            "de": "Gerät",
+            "es": "Unidad"
+          },
+          "required": false
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Unit name",
+            "fr": "Nom de la centrale",
+            "de": "Gerätename",
+            "es": "Nombre de la unidad"
+          }
+        },
+        {
+          "key": "days_left",
+          "type": "number",
+          "label": {
+            "en": "Days left",
+            "fr": "Jours restants",
+            "de": "Verbleibende Tage",
+            "es": "Días restantes"
+          }
+        },
+        {
+          "key": "next_change",
+          "type": "string",
+          "label": {
+            "en": "Change date",
+            "fr": "Date de changement",
+            "de": "Wechseldatum",
+            "es": "Fecha de cambio"
+          }
+        }
+      ]
+    },
+    {
+      "key": "unit_unreachable",
+      "label": {
+        "en": "Ventilation unit unreachable",
+        "fr": "Centrale de ventilation injoignable",
+        "de": "Lüftungsgerät nicht erreichbar",
+        "es": "Unidad de ventilación inaccesible"
+      },
+      "description": {
+        "en": "The unit stopped answering on the local network (two reads in a row failed).",
+        "fr": "La centrale ne répond plus sur le réseau local (deux lectures de suite ont échoué).",
+        "de": "Das Gerät antwortet im lokalen Netzwerk nicht mehr (zwei Lesevorgänge nacheinander fehlgeschlagen).",
+        "es": "La unidad ha dejado de responder en la red local (dos lecturas seguidas han fallado)."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Unit",
+            "fr": "Centrale",
+            "de": "Gerät",
+            "es": "Unidad"
+          },
+          "required": false
+        }
+      ],
+      "variables": [
+        {
+          "key": "device_name",
+          "type": "string",
+          "label": {
+            "en": "Unit name",
+            "fr": "Nom de la centrale",
+            "de": "Gerätename",
+            "es": "Nombre de la unidad"
+          }
+        },
+        {
+          "key": "host",
+          "type": "string",
+          "label": {
+            "en": "Address",
+            "fr": "Adresse",
+            "de": "Adresse",
+            "es": "Dirección"
+          }
+        }
+      ]
+    }
+  ],
+  "scene_actions": [
+    {
+      "key": "set_profile",
+      "label": {
+        "en": "Set the ventilation profile",
+        "fr": "Changer le profil de ventilation",
+        "de": "Lüftungsprofil setzen",
+        "es": "Cambiar el perfil de ventilación"
+      },
+      "description": {
+        "en": "Home, away, boost or fireplace. Boost and fireplace run for the given minutes, or the unit default.",
+        "fr": "Maison, absence, boost ou cheminée. Boost et cheminée durent le nombre de minutes donné, ou la durée réglée sur la centrale.",
+        "de": "Zuhause, Abwesend, Boost oder Kamin. Boost und Kamin laufen die angegebenen Minuten oder die Standarddauer des Geräts.",
+        "es": "En casa, ausente, boost o chimenea. Boost y chimenea duran los minutos indicados o la duración por defecto de la unidad."
+      },
+      "timeout_seconds": 60,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Unit",
+            "fr": "Centrale",
+            "de": "Gerät",
+            "es": "Unidad"
+          },
+          "required": true
+        },
+        {
+          "key": "profile",
+          "type": "select",
+          "label": {
+            "en": "Profile",
+            "fr": "Profil",
+            "de": "Profil",
+            "es": "Perfil"
+          },
+          "required": true,
+          "options": [
+            {
+              "value": "home",
+              "label": {
+                "en": "Home",
+                "fr": "Maison",
+                "de": "Zuhause",
+                "es": "En casa"
+              }
+            },
+            {
+              "value": "away",
+              "label": {
+                "en": "Away",
+                "fr": "Absence",
+                "de": "Abwesend",
+                "es": "Ausente"
+              }
+            },
+            {
+              "value": "boost",
+              "label": {
+                "en": "Boost",
+                "fr": "Boost",
+                "de": "Boost",
+                "es": "Boost"
+              }
+            },
+            {
+              "value": "fireplace",
+              "label": {
+                "en": "Fireplace",
+                "fr": "Cheminée",
+                "de": "Kamin",
+                "es": "Chimenea"
+              }
+            }
+          ]
+        },
+        {
+          "key": "duration",
+          "type": "number",
+          "label": {
+            "en": "Duration (min)",
+            "fr": "Durée (min)",
+            "de": "Dauer (min)",
+            "es": "Duración (min)"
+          },
+          "description": {
+            "en": "Boost and fireplace only. Empty: the duration set on the unit.",
+            "fr": "Boost et cheminée uniquement. Vide : la durée réglée sur la centrale.",
+            "de": "Nur Boost und Kamin. Leer: die am Gerät eingestellte Dauer.",
+            "es": "Solo boost y chimenea. Vacío: la duración fijada en la unidad."
+          },
+          "required": false,
+          "min": 1,
+          "max": 1440
+        }
+      ],
+      "outputs": [
+        {
+          "key": "profile",
+          "type": "string",
+          "label": {
+            "en": "Profile",
+            "fr": "Profil",
+            "de": "Profil",
+            "es": "Perfil"
+          }
+        }
+      ]
+    },
+    {
+      "key": "set_fan_speed",
+      "label": {
+        "en": "Set the fan speed of a profile",
+        "fr": "Régler la ventilation d'un profil",
+        "de": "Lüfterstufe eines Profils setzen",
+        "es": "Ajustar la ventilación de un perfil"
+      },
+      "description": {
+        "en": "Fan speed used by the home, away or boost profile, in percent.",
+        "fr": "Vitesse de ventilation du profil maison, absence ou boost, en pourcentage.",
+        "de": "Lüfterstufe des Profils Zuhause, Abwesend oder Boost, in Prozent.",
+        "es": "Velocidad de ventilación del perfil en casa, ausente o boost, en porcentaje."
+      },
+      "timeout_seconds": 60,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Unit",
+            "fr": "Centrale",
+            "de": "Gerät",
+            "es": "Unidad"
+          },
+          "required": true
+        },
+        {
+          "key": "profile",
+          "type": "select",
+          "label": {
+            "en": "Profile",
+            "fr": "Profil",
+            "de": "Profil",
+            "es": "Perfil"
+          },
+          "required": true,
+          "options": [
+            {
+              "value": "home",
+              "label": {
+                "en": "Home",
+                "fr": "Maison",
+                "de": "Zuhause",
+                "es": "En casa"
+              }
+            },
+            {
+              "value": "away",
+              "label": {
+                "en": "Away",
+                "fr": "Absence",
+                "de": "Abwesend",
+                "es": "Ausente"
+              }
+            },
+            {
+              "value": "boost",
+              "label": {
+                "en": "Boost",
+                "fr": "Boost",
+                "de": "Boost",
+                "es": "Boost"
+              }
+            }
+          ]
+        },
+        {
+          "key": "speed",
+          "type": "number",
+          "label": {
+            "en": "Fan speed (%)",
+            "fr": "Ventilation (%)",
+            "de": "Lüfterstufe (%)",
+            "es": "Ventilación (%)"
+          },
+          "required": true,
+          "min": 0,
+          "max": 100
+        }
+      ],
+      "outputs": [
+        {
+          "key": "speed",
+          "type": "number",
+          "label": {
+            "en": "Fan speed (%)",
+            "fr": "Ventilation (%)",
+            "de": "Lüfterstufe (%)",
+            "es": "Ventilación (%)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "reset_filter_reminder",
+      "label": {
+        "en": "Record a filter change",
+        "fr": "Enregistrer un changement de filtre",
+        "de": "Filterwechsel erfassen",
+        "es": "Registrar un cambio de filtro"
+      },
+      "description": {
+        "en": "The filters were changed today: the unit counts its next reminder from today.",
+        "fr": "Les filtres ont été changés aujourd'hui : la centrale compte son prochain rappel à partir d'aujourd'hui.",
+        "de": "Die Filter wurden heute gewechselt: Das Gerät zählt die nächste Erinnerung ab heute.",
+        "es": "Los filtros se han cambiado hoy: la unidad cuenta su próximo recordatorio a partir de hoy."
+      },
+      "timeout_seconds": 60,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Unit",
+            "fr": "Centrale",
+            "de": "Gerät",
+            "es": "Unidad"
+          },
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "next_change",
+          "type": "string",
+          "label": {
+            "en": "Next change",
+            "fr": "Prochain changement",
+            "de": "Nächster Wechsel",
+            "es": "Próximo cambio"
+          }
+        }
+      ]
+    },
+    {
+      "key": "read_values",
+      "label": {
+        "en": "Read the ventilation values",
+        "fr": "Lire les valeurs de la VMC",
+        "de": "Lüftungswerte lesen",
+        "es": "Leer los valores de ventilación"
+      },
+      "description": {
+        "en": "Reads the unit now; the values can be used by the next actions of the scene.",
+        "fr": "Lit la centrale maintenant ; les valeurs servent aux actions suivantes de la scène.",
+        "de": "Liest das Gerät jetzt; die Werte stehen den nächsten Aktionen der Szene zur Verfügung.",
+        "es": "Lee la unidad ahora; los valores sirven a las siguientes acciones de la escena."
+      },
+      "timeout_seconds": 60,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Unit",
+            "fr": "Centrale",
+            "de": "Gerät",
+            "es": "Unidad"
+          },
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "key": "profile",
+          "type": "string",
+          "label": {
+            "en": "Profile",
+            "fr": "Profil",
+            "de": "Profil",
+            "es": "Perfil"
+          }
+        },
+        {
+          "key": "indoor_temperature",
+          "type": "number",
+          "label": {
+            "en": "Indoor temperature (°C)",
+            "fr": "Température intérieure (°C)",
+            "de": "Innentemperatur (°C)",
+            "es": "Temperatura interior (°C)"
+          }
+        },
+        {
+          "key": "outdoor_temperature",
+          "type": "number",
+          "label": {
+            "en": "Outdoor temperature (°C)",
+            "fr": "Température extérieure (°C)",
+            "de": "Außentemperatur (°C)",
+            "es": "Temperatura exterior (°C)"
+          }
+        },
+        {
+          "key": "supply_temperature",
+          "type": "number",
+          "label": {
+            "en": "Supply air temperature (°C)",
+            "fr": "Température de l'air soufflé (°C)",
+            "de": "Zulufttemperatur (°C)",
+            "es": "Temperatura del aire impulsado (°C)"
+          }
+        },
+        {
+          "key": "humidity",
+          "type": "number",
+          "label": {
+            "en": "Humidity (%)",
+            "fr": "Humidité (%)",
+            "de": "Feuchte (%)",
+            "es": "Humedad (%)"
+          }
+        },
+        {
+          "key": "co2",
+          "type": "number",
+          "label": {
+            "en": "CO2 (ppm)",
+            "fr": "CO2 (ppm)",
+            "de": "CO2 (ppm)",
+            "es": "CO2 (ppm)"
+          }
+        },
+        {
+          "key": "fan_speed",
+          "type": "number",
+          "label": {
+            "en": "Fan speed (%)",
+            "fr": "Ventilation (%)",
+            "de": "Lüfterstufe (%)",
+            "es": "Ventilación (%)"
+          }
+        },
+        {
+          "key": "filter_days_left",
+          "type": "number",
+          "label": {
+            "en": "Filter days left",
+            "fr": "Jours restants du filtre",
+            "de": "Filter-Resttage",
+            "es": "Días restantes del filtro"
+          }
+        }
+      ]
+    }
+  ],
+  "widgets": [
+    {
+      "key": "ventilation",
+      "label": {
+        "en": "Vallox ventilation",
+        "fr": "Ventilation Vallox",
+        "de": "Vallox-Lüftung",
+        "es": "Ventilación Vallox"
+      },
+      "description": {
+        "en": "Temperatures, air quality, profile, filter and alarms, with profile buttons.",
+        "fr": "Températures, qualité de l’air, profil, filtre et alarmes, avec boutons de profil.",
+        "de": "Temperaturen, Luftqualität, Profil, Filter und Alarme, mit Profiltasten.",
+        "es": "Temperaturas, calidad del aire, perfil, filtro y alarmas, con botones de perfil."
+      },
+      "icon": "wind",
+      "settings": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Unit",
+            "fr": "Centrale",
+            "de": "Gerät",
+            "es": "Unidad"
+          },
+          "required": false
+        }
+      ],
+      "action_timeout_seconds": 60
+    }
+  ]
+}

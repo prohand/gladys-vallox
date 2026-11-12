@@ -1,0 +1,142 @@
+# Vallox
+
+Pilotez votre **VMC double flux Vallox** depuis Gladys Assistant : profils (maison, absence, boost,
+cheminée), vitesses de ventilation, températures de soufflage, et tous les capteurs de la
+centrale (températures, humidité, CO2, filtre). Déclencheurs de scène, actions de scène et widget
+de tableau de bord inclus.
+
+Tout reste sur votre réseau local : l'intégration parle à la centrale comme le fait son interface
+web. Aucun compte cloud, aucun accès internet nécessaire.
+
+## Centrales compatibles
+
+Les centrales Vallox à régulation **MV** avec prise réseau, dont l'interface web s'ouvre sur
+`http://<adresse de la centrale>` : Vallox 51/90/96/99/101/110/125/139/145/245 MV, ValloPlus 180/
+240/270/350/370/510/850 MV, ValloMulti 200/300 MV, TSK Multi MV, et les centrales Helios KWL
+construites sur la même régulation.
+
+Les anciennes centrales sans prise réseau (Digit SE, Digit 2…) ne sont pas compatibles.
+
+## Avant de commencer
+
+1. Branchez la centrale sur votre réseau (câble sur sa prise Ethernet).
+2. Donnez-lui une **adresse IP fixe** dans votre box (réservation DHCP) : l'intégration trouve la
+   centrale par son adresse.
+3. Vérifiez que `http://<cette adresse>` ouvre l'interface web Vallox dans un navigateur, depuis
+   un ordinateur du même réseau que Gladys.
+
+## Installation
+
+Dans Gladys, allez dans **Intégrations**, cherchez **Vallox** et installez-la.
+
+## Configuration
+
+| Champ                          | Quoi mettre                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Adresse IP de la centrale      | L'adresse de la centrale, par ex. `192.168.1.50`. Plusieurs centrales : séparez par des virgules. |
+| Intervalle de rafraîchissement | Fréquence de lecture de la centrale. 60 s par défaut, 15 s minimum.                               |
+| Alerte filtre (jours)          | Le déclencheur « Changement de filtre à prévoir » part quand il reste ce nombre de jours.         |
+
+Enregistrez, puis cliquez sur **Tester la connexion** : la réponse donne le modèle, le firmware, le
+profil et les températures de chaque centrale, ou la raison pour laquelle elle n'a pas répondu.
+
+Allez ensuite dans **Découverte** dans l'intégration et créez l'appareil.
+
+## L'appareil
+
+La centrale devient un appareil Gladys, nommé d'après son modèle. Elle est reconnue par
+l'identifiant unique qu'elle porte : changer son adresse IP plus tard ne crée pas un nouvel
+appareil.
+
+| Fonctionnalité                      | Type          | Rôle                                                        |
+| ----------------------------------- | ------------- | ----------------------------------------------------------- |
+| Ventilation on/off                  | interrupteur  | Arrête ou démarre la centrale                               |
+| Away mode (absence)                 | interrupteur  | Profil absence / retour au profil maison                    |
+| Boost                               | interrupteur  | Boost pour la durée réglée sur la centrale / arrêt du boost |
+| Fireplace mode (cheminée)           | interrupteur  | Mode cheminée pour la durée réglée sur la centrale / arrêt  |
+| Fan speed                           | capteur (%)   | Vitesse de ventilation actuelle                             |
+| Indoor air (extract)                | température   | Air extrait des pièces                                      |
+| Outdoor air                         | température   | Air neuf extérieur                                          |
+| Supply air                          | température   | Air soufflé dans les pièces                                 |
+| Exhaust air                         | température   | Air rejeté dehors                                           |
+| Humidity                            | humidité (%)  | Si la centrale a la sonde                                   |
+| CO2                                 | CO2 (ppm)     | Si la centrale a la sonde                                   |
+| Fan speed (home/away/boost)         | réglage (%)   | Vitesse de ventilation de chaque profil                     |
+| Supply air target (home/away/boost) | consigne (°C) | Température de soufflage de chaque profil (5 à 25 °C)       |
+| Boost / fireplace time left         | durée (min)   | Temps restant du boost ou du mode cheminée en cours         |
+| Filter change in                    | durée (jours) | Jours restants avant le prochain changement de filtre       |
+
+Les noms des fonctionnalités sont en anglais (Gladys les affiche tels quels) : vous pouvez les
+renommer dans l'appareil.
+
+La carte de l'appareil affiche un badge **local** tant que la centrale répond, **injoignable**
+sinon.
+
+## Scènes
+
+### Déclencheurs
+
+| Déclencheur                         | Quand                                                                           | Variables                                            |
+| ----------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Le profil de ventilation a changé   | Le profil a changé depuis le panneau de la centrale, son appli ou une minuterie | nom de la centrale, nouveau profil, profil précédent |
+| Alarme de la VMC                    | Une nouvelle alarme est active (ventilateur, échangeur gelé, filtres…)          | nom, gravité, alarme, code, message                  |
+| Changement de filtre à prévoir      | Il reste le nombre de jours réglé dans la configuration                         | nom, jours restants, date de changement              |
+| Centrale de ventilation injoignable | La centrale ne répond plus (deux lectures de suite ont échoué)                  | nom, adresse                                         |
+
+Chaque déclencheur peut être limité à une centrale, « profil changé » à certains profils,
+« alarme » à une gravité.
+
+Les ordres donnés par Gladys (tableau de bord, scènes, widget) ne déclenchent jamais « profil
+changé » : une scène qui réagit à un changement de profil et le change à nouveau ne peut pas
+boucler.
+
+Valeurs du profil dans les variables : `home` (maison), `away` (absence), `boost`, `fireplace`
+(cheminée), `extra`. Le message d'alarme est en anglais.
+
+### Actions
+
+| Action                              | Rôle                                                                     | Résultat pour les actions suivantes                               |
+| ----------------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Changer le profil de ventilation    | Maison, absence, boost ou cheminée ; durée en minutes facultative        | profil                                                            |
+| Régler la ventilation d'un profil   | Vitesse (%) du profil maison, absence ou boost                           | vitesse                                                           |
+| Enregistrer un changement de filtre | Les filtres ont été changés aujourd'hui : la centrale relance son rappel | date du prochain changement                                       |
+| Lire les valeurs de la VMC          | Lit la centrale maintenant                                               | profil, températures, humidité, CO2, ventilation, jours de filtre |
+
+Exemple : _quand l'humidité de la salle de bain dépasse 75 %, passer en boost pendant 30 minutes_.
+
+## Widget de tableau de bord
+
+Ajoutez le widget **Ventilation Vallox** à un tableau de bord. Il affiche :
+
+- des tuiles en direct : température intérieure et extérieure, ventilation, et CO2 (ou humidité,
+  ou air soufflé) ;
+- une liste d'état : profil et temps restant, état de l'échangeur (récupération de chaleur,
+  bypass, dégivrage), changement de filtre, alarmes, connexion ;
+- trois boutons : **Maison**, **Absence**, **Boost**.
+
+Avec plusieurs centrales, choisissez la centrale dans les réglages du widget.
+
+## Boutons de l'écran de configuration
+
+- **Tester la connexion** : lit chaque centrale maintenant et dit ce qu'elle a trouvé.
+- **Filtres changés aujourd'hui** : après un changement de filtres, choisissez la centrale ; son
+  rappel repart d'aujourd'hui.
+
+## Dépannage
+
+| Problème                             | À vérifier                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| « Pas de réponse de 192.168.1.50 »   | L'adresse, le câble, et que `http://<adresse>` s'ouvre dans un navigateur du réseau de Gladys.    |
+| L'appareil n'est pas dans Découverte | La centrale doit avoir répondu une fois : **Tester la connexion**, puis **Découverte** à nouveau. |
+| Humidité ou CO2 reste vide           | La centrale n'a pas cette sonde : la valeur n'est pas publiée.                                    |
+| Les valeurs arrivent en retard       | Baissez l'intervalle de rafraîchissement (15 s minimum).                                          |
+| L'appli Vallox ne marche plus        | La centrale accepte peu de connexions à la fois : évitez un intervalle sous 30 s.                 |
+
+Les logs de l'intégration (Intégrations → Vallox → Logs) disent quelle centrale a échoué et
+pourquoi.
+
+## Confidentialité
+
+L'intégration ne parle qu'à l'adresse saisie, sur votre réseau local (port 80). Rien n'est envoyé
+à Vallox ni à aucun autre service. Le seul fichier écrit est `/data/units.json`, qui garde
+l'identifiant, le modèle et le firmware des centrales déjà rencontrées.
