@@ -6,6 +6,8 @@ All notable changes to this integration are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-12
+
 ### Added
 
 - Vallox integration over the unit's local WebSocket API (Vallox MV, ValloPlus, ValloMulti,
@@ -22,4 +24,5 @@ All notable changes to this integration are documented here. The format follows
 - `local` / `unreachable` transport badge per unit.
 - English, French, German and Spanish texts and documentation.
 
-[Unreleased]: https://github.com/prohand/gladys-vallox/commits/main
+[Unreleased]: https://github.com/prohand/gladys-vallox/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/prohand/gladys-vallox/releases/tag/v1.0.1

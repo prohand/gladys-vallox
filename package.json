@@ -1,6 +1,6 @@
 {
   "name": "gladys-vallox",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Gladys Assistant external integration for Vallox ventilation units (local WebSocket API).",
   "type": "module",
   "main": "index.js",
