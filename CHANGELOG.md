@@ -6,6 +6,10 @@ All notable changes to this integration are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-11-16
+
+- Maintenance release, no functional change.
+
 ## [1.0.1] - 2026-11-12
 
 ### Added
@@ -24,5 +28,6 @@ All notable changes to this integration are documented here. The format follows
 - `local` / `unreachable` transport badge per unit.
 - English, French, German and Spanish texts and documentation.
 
-[Unreleased]: https://github.com/prohand/gladys-vallox/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/prohand/gladys-vallox/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/prohand/gladys-vallox/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/prohand/gladys-vallox/releases/tag/v1.0.1
