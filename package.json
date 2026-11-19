@@ -28,7 +28,7 @@
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.13.0",
     "prettier": "^3.9.10",
-    "ws": "^8.18.3"
+    "ws": "^8.23.0"
   },
   "license": "Apache-2.0"
 }
